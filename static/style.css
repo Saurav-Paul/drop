@@ -70,11 +70,10 @@ table code {
     border-radius: 3px;
 }
 
-/* Delete button */
-.btn-delete {
+/* Action buttons (copy, delete) */
+.btn-action {
     background: none;
     border: none;
-    color: var(--pico-del-color);
     cursor: pointer;
     font-size: 1rem;
     padding: 0.25rem 0.5rem;
@@ -82,8 +81,12 @@ table code {
     transition: opacity 0.2s;
 }
 
-.btn-delete:hover {
+.btn-action:hover {
     opacity: 1;
+}
+
+.btn-delete {
+    color: var(--pico-del-color);
 }
 
 /* Empty state */
