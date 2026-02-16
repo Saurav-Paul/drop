@@ -11,9 +11,17 @@ The server stores encrypted blobs. It never sees your plaintext. Files are uploa
 ### 1. Start the server
 
 ```bash
-git clone https://github.com/Saurav-Paul/drop.git
-cd drop
-docker compose up -d
+# Pull and run from Docker Hub
+docker run -d -p 8802:8802 -v ./data:/data \
+  -e DROP_ADMIN_USER=admin -e DROP_ADMIN_PASS=admin \
+  sauravpaul/drop:latest
+```
+
+Or with docker compose:
+
+```bash
+curl -O https://raw.githubusercontent.com/Saurav-Paul/drop/main/docker-compose.prod.yml
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 The server runs at `http://localhost:8802`. Default admin credentials: `admin`/`admin` (set via env vars).
@@ -58,13 +66,28 @@ curl -O http://localhost:8802/aB3xYz/secret.pdf
 
 ## Server
 
-### Docker (recommended)
+### Docker Hub
 
 ```bash
-docker compose up -d
+docker pull sauravpaul/drop:latest
 ```
 
-The `docker-compose.yml` binds `./data` to `/data` inside the container. Your database and uploaded files persist there.
+**docker run:**
+
+```bash
+docker run -d -p 8802:8802 -v ./data:/data \
+  -e DROP_ADMIN_USER=admin -e DROP_ADMIN_PASS=admin \
+  sauravpaul/drop:latest
+```
+
+**docker compose** — download the production compose file and run:
+
+```bash
+curl -O https://raw.githubusercontent.com/Saurav-Paul/drop/main/docker-compose.prod.yml
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Data (database + uploaded files) persists in `./data` on the host.
 
 **Environment variables:**
 
@@ -74,10 +97,12 @@ The `docker-compose.yml` binds `./data` to `/data` inside the container. Your da
 | `DROP_ADMIN_PASS` | `admin` | Admin password |
 | `DATA_DIR` | `/data` | Storage directory inside the container |
 
-**Production** — uses a pre-built image instead of building from source:
+### Build from source
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d
+git clone https://github.com/Saurav-Paul/drop.git
+cd drop
+docker compose up -d
 ```
 
 ### Local development
