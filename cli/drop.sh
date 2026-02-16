@@ -53,16 +53,15 @@ check_deps() {
 }
 
 # Prompt for password (hidden input, confirm on encrypt)
+# Returns empty string if user presses Enter (no encryption)
 ask_password() {
     local mode="$1" # "encrypt" or "decrypt"
 
-    echo -ne "${BOLD}Password: ${NC}" >&2
+    echo -ne "${BOLD}Password (empty = no encryption): ${NC}" >&2
     read -s password
     echo "" >&2
 
-    [ -z "$password" ] && die "Password cannot be empty"
-
-    if [ "$mode" = "encrypt" ]; then
+    if [ -n "$password" ] && [ "$mode" = "encrypt" ]; then
         echo -ne "${BOLD}Confirm:  ${NC}" >&2
         read -s password_confirm
         echo "" >&2
@@ -101,18 +100,21 @@ do_upload() {
     password=$(ask_password encrypt)
 
     echo -e "${CYAN}Compressing...${NC}"
-    local tmpfile
-    tmpfile=$(mktemp)
-    gzip -c "$file" > "$tmpfile"
+    local compressed
+    compressed=$(mktemp)
+    gzip -c "$file" > "$compressed"
 
-    echo -e "${CYAN}Encrypting...${NC}"
-    local encrypted
-    encrypted=$(mktemp)
-    openssl enc -aes-256-cbc -pbkdf2 -iter 100000 \
-        -in "$tmpfile" -out "$encrypted" \
-        -pass "pass:$password" 2>/dev/null
-
-    rm -f "$tmpfile"
+    local upload_file="$compressed"
+    if [ -n "$password" ]; then
+        echo -e "${CYAN}Encrypting...${NC}"
+        local encrypted
+        encrypted=$(mktemp)
+        openssl enc -aes-256-cbc -pbkdf2 -iter 100000 \
+            -in "$compressed" -out "$encrypted" \
+            -pass "pass:$password" 2>/dev/null
+        rm -f "$compressed"
+        upload_file="$encrypted"
+    fi
 
     # Build headers
     local headers=()
@@ -142,9 +144,9 @@ do_upload() {
     response=$(curl -sS -T - \
         "${headers[@]}" \
         "${DROP_SERVER}/${filename}" \
-        < "$encrypted")
+        < "$upload_file")
 
-    rm -f "$encrypted"
+    rm -f "$upload_file"
 
     # Parse response
     local url
@@ -158,8 +160,11 @@ do_upload() {
     echo -e "${GREEN}${BOLD}Upload complete!${NC}"
     echo -e "${BOLD}URL:${NC} ${url}"
     echo ""
-    echo -e "${YELLOW}The recipient will need the password to decrypt.${NC}"
-    echo -e "${YELLOW}The server only stores encrypted data.${NC}"
+    if [ -n "$password" ]; then
+        echo -e "${YELLOW}The recipient will need the password to decrypt.${NC}"
+    else
+        echo -e "${YELLOW}No encryption — file is compressed only.${NC}"
+    fi
 
     # Copy to clipboard if possible
     if command -v pbcopy &>/dev/null; then
@@ -189,27 +194,30 @@ do_download() {
     password=$(ask_password decrypt)
 
     echo -e "${CYAN}Downloading...${NC}"
-    local encrypted
-    encrypted=$(mktemp)
+    local downloaded
+    downloaded=$(mktemp)
     local http_code
-    http_code=$(curl -sSL -w "%{http_code}" -o "$encrypted" "$url")
+    http_code=$(curl -sSL -w "%{http_code}" -o "$downloaded" "$url")
 
     if [ "$http_code" != "200" ]; then
-        rm -f "$encrypted"
+        rm -f "$downloaded"
         die "Download failed (HTTP $http_code)"
     fi
 
-    echo -e "${CYAN}Decrypting...${NC}"
     local compressed
-    compressed=$(mktemp)
-    if ! openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -d \
-        -in "$encrypted" -out "$compressed" \
-        -pass "pass:$password" 2>/dev/null; then
-        rm -f "$encrypted" "$compressed"
-        die "Decryption failed — wrong password?"
+    if [ -n "$password" ]; then
+        echo -e "${CYAN}Decrypting...${NC}"
+        compressed=$(mktemp)
+        if ! openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -d \
+            -in "$downloaded" -out "$compressed" \
+            -pass "pass:$password" 2>/dev/null; then
+            rm -f "$downloaded" "$compressed"
+            die "Decryption failed — wrong password?"
+        fi
+        rm -f "$downloaded"
+    else
+        compressed="$downloaded"
     fi
-
-    rm -f "$encrypted"
 
     echo -e "${CYAN}Decompressing...${NC}"
     local output="$filename"
