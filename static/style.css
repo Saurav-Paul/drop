@@ -101,6 +101,13 @@ form small {
     opacity: 0.6;
 }
 
+/* Cleanup message */
+.cleanup-message {
+    color: var(--pico-ins-color);
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
 /* Login page */
 .login-container {
     max-width: 400px;

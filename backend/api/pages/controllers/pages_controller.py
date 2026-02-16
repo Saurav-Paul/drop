@@ -7,11 +7,17 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from fastapi import UploadFile, File
+
 from auth import COOKIE_NAME, create_session_cookie, is_admin
-from config import ADMIN_ENABLED, DROP_ADMIN_PASS, DROP_ADMIN_USER
+from config import ADMIN_ENABLED, DROP_ADMIN_PASS, DROP_ADMIN_USER, FILES_DIR
+from api.files.repositories import files_repository
 from api.files.services import files_service
 from api.settings.dto.settings import SettingsUpdate
+from api.settings.repositories import settings_repository
 from api.settings.services import settings_service
+from api.upload.services import upload_service
+from cleanup import run_cleanup
 
 import secrets
 
@@ -113,10 +119,18 @@ async def dashboard(request: Request):
 
     files = files_service.list_files()
     stats = files_service.get_stats()
+    last_cleanup_raw = settings_repository.get("last_cleanup")
+    last_cleanup = None
+    if last_cleanup_raw:
+        try:
+            last_cleanup = datetime.fromisoformat(last_cleanup_raw)
+        except ValueError:
+            last_cleanup = None
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "files": files,
         "stats": stats,
+        "last_cleanup": last_cleanup,
     })
 
 
@@ -158,13 +172,79 @@ async def settings_submit(
 
 @router.delete("/api/files/{code}/htmx")
 async def htmx_delete_file(request: Request, code: str):
-    """HTMX endpoint — delete file and return updated stats partial."""
+    """HTMX endpoint — delete file and return empty row + OOB stats update."""
     if not is_admin(request):
         return HTMLResponse("Unauthorized", status_code=401)
 
     files_service.delete_file(code)
     stats = files_service.get_stats()
-    return templates.TemplateResponse("_stats.html", {
+    stats_html = templates.get_template("_stats.html").render(
+        request=request, stats=stats,
+    )
+    return HTMLResponse(f'<div id="stats-container" hx-swap-oob="innerHTML">{stats_html}</div>')
+
+
+@router.post("/cleanup", response_class=HTMLResponse)
+async def run_cleanup_action(request: Request):
+    """HTMX endpoint — trigger cleanup and return updated dashboard."""
+    if not is_admin(request):
+        return HTMLResponse("Unauthorized", status_code=401)
+
+    count = run_cleanup()
+    files = files_service.list_files()
+    stats = files_service.get_stats()
+    last_cleanup_raw = settings_repository.get("last_cleanup")
+    last_cleanup = None
+    if last_cleanup_raw:
+        try:
+            last_cleanup = datetime.fromisoformat(last_cleanup_raw)
+        except ValueError:
+            last_cleanup = None
+    return templates.TemplateResponse("_dashboard_content.html", {
         "request": request,
+        "files": files,
         "stats": stats,
+        "last_cleanup": last_cleanup,
+        "cleanup_message": f"Cleaned up {count} file{'s' if count != 1 else ''}",
     })
+
+
+@router.post("/upload", response_class=HTMLResponse)
+async def manual_upload(
+    request: Request,
+    file: UploadFile = File(...),
+    expiry: str = Form(""),
+    max_downloads: str = Form(""),
+):
+    """Manual file upload from the dashboard."""
+    if not is_admin(request):
+        return HTMLResponse("Unauthorized", status_code=401)
+
+    # Save file to disk
+    filename = file.filename
+    code = upload_service.generate_code()
+    file_dir = FILES_DIR / code
+    file_dir.mkdir(parents=True, exist_ok=True)
+    final_path = file_dir / filename
+
+    size = 0
+    with open(final_path, "wb") as f:
+        while chunk := await file.read(1024 * 1024):
+            size += len(chunk)
+            f.write(chunk)
+
+    expires_at = upload_service.parse_expiry(expiry) if expiry else upload_service.parse_expiry(
+        settings_service.get_all().default_expiry
+    )
+    max_dl = int(max_downloads) if max_downloads else None
+
+    files_repository.create(
+        code=code,
+        filename=filename,
+        filepath=str(final_path),
+        size=size,
+        max_downloads=max_dl,
+        expires_at=expires_at,
+    )
+
+    return RedirectResponse(url="/", status_code=303)

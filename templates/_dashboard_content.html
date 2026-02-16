@@ -1,0 +1,54 @@
+<div id="stats-container">
+    {% include "_stats.html" %}
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+    <h2 style="margin: 0;">Files</h2>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button
+            class="outline"
+            hx-post="/cleanup"
+            hx-target="#dashboard-content"
+            hx-swap="innerHTML"
+            hx-confirm="Run cleanup now?"
+            style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+        >Cleanup</button>
+        <button
+            onclick="document.getElementById('upload-modal').showModal()"
+            style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+        >Upload</button>
+    </div>
+</div>
+
+{% if cleanup_message %}
+<p class="cleanup-message">{{ cleanup_message }}</p>
+{% endif %}
+
+{% if last_cleanup %}
+<p style="font-size: 0.8rem; opacity: 0.5; margin-top: -0.5rem; margin-bottom: 1rem;">Last cleanup: {{ last_cleanup | timeago }}</p>
+{% endif %}
+
+{% if files %}
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Filename</th>
+                <th>Code</th>
+                <th>Size</th>
+                <th>Downloads</th>
+                <th>Expires</th>
+                <th>Uploaded</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for file in files %}
+            {% include "_file_row.html" %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">No files uploaded yet.</p>
+{% endif %}

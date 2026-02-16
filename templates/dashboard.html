@@ -1,34 +1,29 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — Drop{% endblock %}
 {% block content %}
-<div id="stats-container">
-    {% include "_stats.html" %}
+<div id="dashboard-content">
+    {% include "_dashboard_content.html" %}
 </div>
 
-<h2>Files</h2>
+<!-- Upload Modal -->
+<dialog id="upload-modal">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="document.getElementById('upload-modal').close()"></button>
+            <h3>Upload File</h3>
+        </header>
+        <form method="post" action="/upload" enctype="multipart/form-data">
+            <label for="file">File</label>
+            <input type="file" id="file" name="file" required>
 
-{% if files %}
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>Filename</th>
-                <th>Code</th>
-                <th>Size</th>
-                <th>Downloads</th>
-                <th>Expires</th>
-                <th>Uploaded</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for file in files %}
-            {% include "_file_row.html" %}
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% else %}
-<p class="empty-state">No files uploaded yet.</p>
-{% endif %}
+            <label for="expiry">Expiry</label>
+            <input type="text" id="expiry" name="expiry" placeholder="e.g. 24h, 3d, 7d (default: settings)">
+
+            <label for="max_downloads">Max Downloads</label>
+            <input type="text" id="max_downloads" name="max_downloads" placeholder="Leave empty for unlimited">
+
+            <button type="submit">Upload</button>
+        </form>
+    </article>
+</dialog>
 {% endblock %}
