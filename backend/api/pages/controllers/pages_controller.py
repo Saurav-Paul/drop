@@ -7,10 +7,13 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from auth import is_admin
+from auth import COOKIE_NAME, create_session_cookie, is_admin
+from config import ADMIN_ENABLED, DROP_ADMIN_PASS, DROP_ADMIN_USER
 from api.files.services import files_service
 from api.settings.dto.settings import SettingsUpdate
 from api.settings.services import settings_service
+
+import secrets
 
 router = APIRouter(tags=["Pages"])
 
@@ -51,10 +54,62 @@ templates.env.filters["timeago"] = _timeago
 templates.env.filters["filesize"] = _filesize
 
 
+def _require_admin(request: Request):
+    """Return a redirect to /login if not admin, or None if authorized."""
+    if is_admin(request):
+        return None
+    return RedirectResponse(url="/login", status_code=302)
+
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    if not ADMIN_ENABLED or is_admin(request):
+        return RedirectResponse(url="/")
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+
+@router.post("/login")
+async def login_submit(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+):
+    if not ADMIN_ENABLED:
+        return RedirectResponse(url="/", status_code=303)
+
+    if (
+        secrets.compare_digest(username, DROP_ADMIN_USER)
+        and secrets.compare_digest(password, DROP_ADMIN_PASS)
+    ):
+        response = RedirectResponse(url="/", status_code=303)
+        response.set_cookie(
+            COOKIE_NAME,
+            create_session_cookie(),
+            httponly=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 30,  # 30 days
+        )
+        return response
+
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "error": "Invalid username or password"},
+        status_code=401,
+    )
+
+
+@router.get("/logout")
+async def logout(request: Request):
+    response = RedirectResponse(url="/login", status_code=302)
+    response.delete_cookie(COOKIE_NAME)
+    return response
+
+
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    if not is_admin(request):
-        return templates.TemplateResponse("unauthorized.html", {"request": request}, status_code=401)
+    redirect = _require_admin(request)
+    if redirect:
+        return redirect
 
     files = files_service.list_files()
     stats = files_service.get_stats()
@@ -67,8 +122,9 @@ async def dashboard(request: Request):
 
 @router.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
-    if not is_admin(request):
-        return templates.TemplateResponse("unauthorized.html", {"request": request}, status_code=401)
+    redirect = _require_admin(request)
+    if redirect:
+        return redirect
 
     settings = settings_service.get_all()
     return templates.TemplateResponse("settings.html", {
@@ -86,8 +142,9 @@ async def settings_submit(
     storage_limit: str = Form("1GB"),
     upload_api_key: str = Form(""),
 ):
-    if not is_admin(request):
-        return templates.TemplateResponse("unauthorized.html", {"request": request}, status_code=401)
+    redirect = _require_admin(request)
+    if redirect:
+        return redirect
 
     settings_service.update(SettingsUpdate(
         default_expiry=default_expiry,

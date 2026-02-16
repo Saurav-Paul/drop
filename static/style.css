@@ -100,3 +100,14 @@ form small {
     margin-bottom: 1rem;
     opacity: 0.6;
 }
+
+/* Login page */
+.login-container {
+    max-width: 400px;
+    margin: 3rem auto;
+}
+
+.login-container .error {
+    color: var(--pico-del-color);
+    margin-bottom: 1rem;
+}
