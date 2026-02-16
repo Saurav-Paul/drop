@@ -1,6 +1,9 @@
-"""Background cleanup — removes expired and max-downloaded files."""
+"""Cleanup — removes expired and max-downloaded files.
 
-import asyncio
+Run standalone: python cleanup.py
+Called by cron every 10 minutes inside the container.
+"""
+
 import shutil
 from pathlib import Path
 
@@ -8,17 +11,7 @@ from api.files.repositories import files_repository
 from config import FILES_DIR
 
 
-async def cleanup_loop(interval: int = 600):
-    """Run cleanup every `interval` seconds (default 10 minutes)."""
-    while True:
-        try:
-            _run_cleanup()
-        except Exception as e:
-            print(f"Cleanup error: {e}")
-        await asyncio.sleep(interval)
-
-
-def _run_cleanup():
+def run_cleanup():
     """Delete expired files, max-downloaded files, and orphaned directories."""
     # Expired files
     for file in files_repository.get_expired():
@@ -43,3 +36,7 @@ def _delete_file(code: str):
         file_path = Path(filepath)
         if file_path.parent.exists():
             shutil.rmtree(file_path.parent, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    run_cleanup()

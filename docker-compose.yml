@@ -4,12 +4,9 @@ services:
     ports:
       - "8802:8802"
     volumes:
-      - drop_data:/data
+      - ./data:/data
     environment:
       - DATA_DIR=/data
       - DROP_ADMIN_USER=${DROP_ADMIN_USER:-admin}
       - DROP_ADMIN_PASS=${DROP_ADMIN_PASS:-admin}
     restart: unless-stopped
-
-volumes:
-  drop_data:

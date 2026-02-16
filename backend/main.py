@@ -1,7 +1,5 @@
 """Drop — Main application entry point."""
 
-import asyncio
-from contextlib import asynccontextmanager
 from pathlib import Path
 
 from alembic import command
@@ -15,7 +13,6 @@ from api.settings.controllers.settings_controller import router as settings_rout
 from api.pages.controllers.pages_controller import router as pages_router
 from api.download.controllers.download_controller import router as download_router
 from api.upload.controllers.upload_controller import router as upload_router
-from cleanup import cleanup_loop
 
 
 def run_migrations():
@@ -34,19 +31,7 @@ def run_migrations():
         init_db()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Start background cleanup task."""
-    task = asyncio.create_task(cleanup_loop())
-    yield
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
-
-
-app = FastAPI(title="Drop", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Drop", version="0.1.0")
 
 # Run database migrations
 run_migrations()
