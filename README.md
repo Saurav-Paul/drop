@@ -45,10 +45,10 @@ The server runs at `http://localhost:8802`. Default admin credentials: `admin`/`
 
 ```bash
 ./cli/drop.sh secret.pdf
-# Password: ****
+# Password (empty = no encryption): ****
 # Confirm:  ****
 # Upload complete!
-# URL: http://localhost:8802/aB3xYz/secret.pdf
+# URL: https://drop.example.com/aB3xYz/secret.pdf
 ```
 
 **With curl** (no encryption):
@@ -63,8 +63,8 @@ curl -T secret.pdf http://localhost:8802
 **With Drop CLI** (decrypts automatically):
 
 ```bash
-./cli/drop.sh get http://localhost:8802/aB3xYz/secret.pdf
-# Password: ****
+./cli/drop.sh get https://drop.example.com/aB3xYz/secret.pdf
+# Password (empty = no encryption): ****
 # Download complete!
 # Saved: secret.pdf
 ```
@@ -72,7 +72,7 @@ curl -T secret.pdf http://localhost:8802
 **With curl**:
 
 ```bash
-curl -O http://localhost:8802/aB3xYz/secret.pdf
+curl -O https://drop.example.com/aB3xYz/secret.pdf
 ```
 
 ---
@@ -143,10 +143,10 @@ Standalone bash script that handles compression, encryption, and upload in one c
 
 ### Installation
 
-**Via tooldock:**
+**Via [tooldock](https://github.com/Saurav-Paul/tooldock):**
 
 ```bash
-tooldock install drop
+tooldock plugin install drop
 tooldock drop myfile.txt
 ```
 
@@ -164,7 +164,7 @@ alias drop="./cli/drop.sh"
 drop myfile.txt
 ```
 
-You'll be prompted for a password (entered twice for confirmation). The file is compressed with gzip, encrypted with AES-256-CBC (PBKDF2, 100k iterations), and uploaded. The server only receives the encrypted blob.
+You'll be prompted for a password. Enter a password (confirmed twice) to encrypt, or press Enter to skip encryption and upload compressed only.
 
 **Options:**
 
@@ -175,35 +175,42 @@ drop myfile.txt -e 1w -m 10   # Both
 drop myfile.txt --admin        # Admin mode (bypass server limits)
 ```
 
+The `--admin` flag prompts for admin credentials (or uses `DROP_ADMIN_USER`/`DROP_ADMIN_PASS` env vars if set). Admin uploads bypass server-enforced limits like max expiry and file size.
+
 The URL is automatically copied to your clipboard (macOS/Linux).
 
 ### Download
 
 ```bash
-drop get http://localhost:8802/aB3xYz/myfile.txt
+drop get https://drop.example.com/aB3xYz/myfile.txt
 ```
 
-You'll be prompted for the password. The file is downloaded, decrypted, and decompressed. If a file with the same name already exists, it's saved as `myfile_1.txt`, `myfile_2.txt`, etc.
+You'll be prompted for the password. Enter the same password used during upload, or press Enter if the file was uploaded without encryption. The file is downloaded, decrypted (if encrypted), and decompressed. If a file with the same name already exists, it's saved as `myfile_1.txt`, `myfile_2.txt`, etc.
 
 ### Environment
 
 | Variable | Default | Description |
 |---|---|---|
 | `DROP_SERVER` | `http://localhost:8802` | Server URL |
-| `DROP_ADMIN_USER` | — | Admin username (for `--admin` flag) |
-| `DROP_ADMIN_PASS` | — | Admin password (for `--admin` flag) |
+| `DROP_ADMIN_USER` | — | Admin username (optional, prompts if not set) |
+| `DROP_ADMIN_PASS` | — | Admin password (optional, prompts if not set) |
 
 ### How encryption works
 
 ```
 Upload:  file → gzip → AES-256-CBC (password + PBKDF2) → upload encrypted blob
 Download: encrypted blob → AES-256-CBC decrypt → gunzip → file
+
+Without password:
+Upload:  file → gzip → upload compressed blob
+Download: compressed blob → gunzip → file
 ```
 
 - Encryption uses OpenSSL's `aes-256-cbc` with PBKDF2 key derivation (100,000 iterations)
 - The password never leaves your machine
-- The server stores and serves only the encrypted blob
-- Without the password, the file is unreadable
+- The server stores and serves only the encrypted/compressed blob
+- Without the password, encrypted files are unreadable
+- Empty password skips encryption entirely (compression only)
 
 ---
 
