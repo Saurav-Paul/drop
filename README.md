@@ -33,7 +33,7 @@ The server runs at `http://localhost:8802`. Default admin credentials: `admin`/`
 **With curl** (no encryption):
 
 ```bash
-curl -T secret.pdf http://localhost:8802/secret.pdf
+curl -T secret.pdf http://localhost:8802
 # {"url":"http://localhost:8802/aB3xYz/secret.pdf","code":"aB3xYz",...}
 ```
 
@@ -176,23 +176,23 @@ No CLI needed. Use curl directly for uploads and downloads. Files are stored as-
 ### Upload
 
 ```bash
-# Basic upload
-curl -T myfile.txt http://localhost:8802/myfile.txt
+# Basic upload (curl appends the filename automatically)
+curl -T myfile.txt http://localhost:8802
 
 # With expiry
-curl -T myfile.txt -H "X-Expires: 3d" http://localhost:8802/myfile.txt
+curl -T myfile.txt -H "X-Expires: 3d" http://localhost:8802
 
 # With max downloads
-curl -T myfile.txt -H "X-Max-Downloads: 5" http://localhost:8802/myfile.txt
+curl -T myfile.txt -H "X-Max-Downloads: 5" http://localhost:8802
 
 # Both
-curl -T myfile.txt -H "X-Expires: 1w" -H "X-Max-Downloads: 10" http://localhost:8802/myfile.txt
+curl -T myfile.txt -H "X-Expires: 1w" -H "X-Max-Downloads: 10" http://localhost:8802
 
 # Admin mode (bypass size/expiry limits)
 curl -T myfile.txt \
   -H "X-Admin-User: admin" \
   -H "X-Admin-Pass: admin" \
-  http://localhost:8802/myfile.txt
+  http://localhost:8802
 ```
 
 **Expiry formats:** `30m` (minutes), `2h` (hours), `3d` (days), `1w` (weeks)
