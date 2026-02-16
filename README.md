@@ -17,11 +17,24 @@ docker run -d -p 8802:8802 -v ./data:/data \
   sauravpaul/drop:latest
 ```
 
-Or with docker compose:
+Or with docker compose — create a `docker-compose.yml`:
+
+```yaml
+services:
+  drop:
+    image: sauravpaul/drop:latest
+    ports:
+      - "8802:8802"
+    volumes:
+      - ./data:/data
+    environment:
+      - DROP_ADMIN_USER=admin
+      - DROP_ADMIN_PASS=admin
+    restart: unless-stopped
+```
 
 ```bash
-curl -O https://raw.githubusercontent.com/Saurav-Paul/drop/main/docker-compose.prod.yml
-docker compose -f docker-compose.prod.yml up -d
+docker compose up -d
 ```
 
 The server runs at `http://localhost:8802`. Default admin credentials: `admin`/`admin` (set via env vars).
