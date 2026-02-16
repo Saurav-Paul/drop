@@ -35,8 +35,8 @@ usage() {
     echo ""
     echo "Environment:"
     echo "  DROP_SERVER      Server URL (default: http://localhost:8802)"
-    echo "  DROP_ADMIN_USER  Admin username (for --admin mode)"
-    echo "  DROP_ADMIN_PASS  Admin password (for --admin mode)"
+    echo "  DROP_ADMIN_USER  Admin username (optional, prompts if not set)"
+    echo "  DROP_ADMIN_PASS  Admin password (optional, prompts if not set)"
     exit 0
 }
 
@@ -120,10 +120,21 @@ do_upload() {
     [ -n "$max_downloads" ] && headers+=(-H "X-Max-Downloads: $max_downloads")
 
     if [ "$admin" = true ]; then
-        [ -z "$DROP_ADMIN_USER" ] && die "DROP_ADMIN_USER not set"
-        [ -z "$DROP_ADMIN_PASS" ] && die "DROP_ADMIN_PASS not set"
-        headers+=(-H "X-Admin-User: $DROP_ADMIN_USER")
-        headers+=(-H "X-Admin-Pass: $DROP_ADMIN_PASS")
+        local admin_user="${DROP_ADMIN_USER:-}"
+        local admin_pass="${DROP_ADMIN_PASS:-}"
+        if [ -z "$admin_user" ]; then
+            echo -ne "${BOLD}Admin user: ${NC}" >&2
+            read admin_user
+            [ -z "$admin_user" ] && die "Admin user cannot be empty"
+        fi
+        if [ -z "$admin_pass" ]; then
+            echo -ne "${BOLD}Admin pass: ${NC}" >&2
+            read -s admin_pass
+            echo "" >&2
+            [ -z "$admin_pass" ] && die "Admin pass cannot be empty"
+        fi
+        headers+=(-H "X-Admin-User: $admin_user")
+        headers+=(-H "X-Admin-Pass: $admin_pass")
     fi
 
     echo -e "${CYAN}Uploading...${NC}"
