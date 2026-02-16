@@ -181,7 +181,7 @@ do_download() {
     local encrypted
     encrypted=$(mktemp)
     local http_code
-    http_code=$(curl -sS -w "%{http_code}" -o "$encrypted" "$url")
+    http_code=$(curl -sSL -w "%{http_code}" -o "$encrypted" "$url")
 
     if [ "$http_code" != "200" ]; then
         rm -f "$encrypted"

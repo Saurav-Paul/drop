@@ -144,8 +144,11 @@ async def save_upload(
             expires_at=expires_at,
         )
 
-        # Build download URL
+        # Build download URL (respect X-Forwarded-Proto from reverse proxy)
         base_url = str(request.base_url).rstrip("/")
+        proto = request.headers.get("x-forwarded-proto")
+        if proto:
+            base_url = base_url.replace("http://", f"{proto}://", 1)
         url = f"{base_url}/{code}/{filename}"
 
         return UploadResponse(
