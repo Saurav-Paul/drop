@@ -2,11 +2,11 @@
 
 # Drop CLI — Encrypted file transfer
 # Usage:
-#   drop <file>                    Compress + encrypt + upload
+#   drop <file>                    Compress + encrypt + upload (prompts for password)
 #   drop <file> -e 3d             Custom expiry
 #   drop <file> -m 5              Max 5 downloads
 #   drop <file> --admin           Admin mode (bypass limits)
-#   drop get <url>#<key>          Download + decrypt + decompress
+#   drop get <url>                Download + decrypt + decompress (prompts for password)
 
 set -e
 
@@ -31,7 +31,7 @@ usage() {
     echo "  drop <file> -e <expiry>        Set expiry (e.g., 30m, 2h, 3d, 1w)"
     echo "  drop <file> -m <max>           Set max downloads"
     echo "  drop <file> --admin            Use admin credentials"
-    echo "  drop get <url>#<key>           Download, decrypt, and decompress"
+    echo "  drop get <url>                 Download, decrypt, and decompress"
     echo ""
     echo "Environment:"
     echo "  DROP_SERVER      Server URL (default: http://localhost:8802)"
@@ -50,6 +50,26 @@ check_deps() {
     for cmd in curl gzip openssl; do
         command -v "$cmd" &>/dev/null || die "$cmd is required but not installed"
     done
+}
+
+# Prompt for password (hidden input, confirm on encrypt)
+ask_password() {
+    local mode="$1" # "encrypt" or "decrypt"
+
+    echo -ne "${BOLD}Password: ${NC}" >&2
+    read -s password
+    echo "" >&2
+
+    [ -z "$password" ] && die "Password cannot be empty"
+
+    if [ "$mode" = "encrypt" ]; then
+        echo -ne "${BOLD}Confirm:  ${NC}" >&2
+        read -s password_confirm
+        echo "" >&2
+        [ "$password" != "$password_confirm" ] && die "Passwords don't match"
+    fi
+
+    echo "$password"
 }
 
 # Upload: compress + encrypt + upload
@@ -76,21 +96,21 @@ do_upload() {
     local filename
     filename=$(basename "$file")
 
+    # Ask for password
+    local password
+    password=$(ask_password encrypt)
+
     echo -e "${CYAN}Compressing...${NC}"
     local tmpfile
     tmpfile=$(mktemp)
     gzip -c "$file" > "$tmpfile"
-
-    # Generate random 256-bit key
-    local key
-    key=$(openssl rand -hex 32)
 
     echo -e "${CYAN}Encrypting...${NC}"
     local encrypted
     encrypted=$(mktemp)
     openssl enc -aes-256-cbc -pbkdf2 -iter 100000 \
         -in "$tmpfile" -out "$encrypted" \
-        -pass "pass:$key" 2>/dev/null
+        -pass "pass:$password" 2>/dev/null
 
     rm -f "$tmpfile"
 
@@ -123,43 +143,39 @@ do_upload() {
         die "Upload failed: $response"
     fi
 
-    local file_size
-    file_size=$(echo "$response" | grep -o '"size":[0-9]*' | head -1 | cut -d: -f2)
-
     echo ""
     echo -e "${GREEN}${BOLD}Upload complete!${NC}"
-    echo -e "${BOLD}URL:${NC} ${url}#${key}"
+    echo -e "${BOLD}URL:${NC} ${url}"
     echo ""
-    echo -e "${YELLOW}Share the full URL (including the #key part).${NC}"
-    echo -e "${YELLOW}The key never leaves your machine — the server only stores encrypted data.${NC}"
+    echo -e "${YELLOW}The recipient will need the password to decrypt.${NC}"
+    echo -e "${YELLOW}The server only stores encrypted data.${NC}"
 
     # Copy to clipboard if possible
     if command -v pbcopy &>/dev/null; then
-        echo -n "${url}#${key}" | pbcopy
-        echo -e "${GREEN}Copied to clipboard.${NC}"
+        echo -n "${url}" | pbcopy
+        echo -e "${GREEN}URL copied to clipboard.${NC}"
     elif command -v xclip &>/dev/null; then
-        echo -n "${url}#${key}" | xclip -selection clipboard
-        echo -e "${GREEN}Copied to clipboard.${NC}"
+        echo -n "${url}" | xclip -selection clipboard
+        echo -e "${GREEN}URL copied to clipboard.${NC}"
     fi
 }
 
 # Download: download + decrypt + decompress
 do_download() {
-    local full_url="$1"
+    local url="$1"
 
-    [ -z "$full_url" ] && die "Usage: drop get <url>#<key>"
+    [ -z "$url" ] && die "Usage: drop get <url>"
 
-    # Split URL and key at the fragment
-    local url key
-    url="${full_url%%#*}"
-    key="${full_url##*#}"
-
-    [ "$url" = "$full_url" ] && die "No encryption key found in URL (expected #key fragment)"
-    [ -z "$key" ] && die "Empty encryption key"
+    # Strip any trailing fragment just in case
+    url="${url%%#*}"
 
     # Extract filename from URL
     local filename
     filename=$(basename "$url")
+
+    # Ask for password
+    local password
+    password=$(ask_password decrypt)
 
     echo -e "${CYAN}Downloading...${NC}"
     local encrypted
@@ -177,9 +193,9 @@ do_download() {
     compressed=$(mktemp)
     if ! openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -d \
         -in "$encrypted" -out "$compressed" \
-        -pass "pass:$key" 2>/dev/null; then
+        -pass "pass:$password" 2>/dev/null; then
         rm -f "$encrypted" "$compressed"
-        die "Decryption failed — wrong key?"
+        die "Decryption failed — wrong password?"
     fi
 
     rm -f "$encrypted"
