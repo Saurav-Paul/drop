@@ -1,6 +1,6 @@
 {
   "name": "drop",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Self-hosted encrypted file transfer",
   "repository": "https://github.com/Saurav-Paul/drop",
   "docker": {
