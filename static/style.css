@@ -1,0 +1,102 @@
+/* Drop — minimal Pico CSS overrides */
+
+nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 2rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    margin-bottom: 1.5rem;
+}
+
+nav .brand {
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+nav .nav-links {
+    display: flex;
+    gap: 1.5rem;
+}
+
+nav .nav-links a {
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+nav .nav-links a:hover {
+    opacity: 1;
+}
+
+/* Stats grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    margin-top: 0.25rem;
+}
+
+/* Table */
+.table-container {
+    overflow-x: auto;
+}
+
+table code {
+    font-size: 0.85em;
+    padding: 0.15em 0.4em;
+    background: var(--pico-muted-border-color);
+    border-radius: 3px;
+}
+
+/* Delete button */
+.btn-delete {
+    background: none;
+    border: none;
+    color: var(--pico-del-color);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.25rem 0.5rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.btn-delete:hover {
+    opacity: 1;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    opacity: 0.5;
+    padding: 3rem 0;
+}
+
+/* Settings form */
+form small {
+    display: block;
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.6;
+}

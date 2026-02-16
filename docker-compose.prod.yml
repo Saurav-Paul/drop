@@ -1,0 +1,15 @@
+services:
+  drop:
+    image: sauravpaul/drop:latest
+    ports:
+      - "8802:8802"
+    volumes:
+      - drop_data:/data
+    environment:
+      - DATA_DIR=/data
+      - DROP_ADMIN_USER=${DROP_ADMIN_USER:-}
+      - DROP_ADMIN_PASS=${DROP_ADMIN_PASS:-}
+    restart: unless-stopped
+
+volumes:
+  drop_data:

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Settings — Drop{% endblock %}
+{% block content %}
+<h2>Settings</h2>
+
+<form method="post" action="/settings">
+    <label for="default_expiry">Default Expiry</label>
+    <input type="text" id="default_expiry" name="default_expiry" value="{{ settings.default_expiry }}" placeholder="24h">
+    <small>Default expiry for uploads (e.g., 30m, 2h, 3d, 1w)</small>
+
+    <label for="max_expiry">Max Expiry</label>
+    <input type="text" id="max_expiry" name="max_expiry" value="{{ settings.max_expiry }}" placeholder="7d">
+    <small>Maximum allowed expiry for non-admin uploads</small>
+
+    <label for="max_file_size">Max File Size</label>
+    <input type="text" id="max_file_size" name="max_file_size" value="{{ settings.max_file_size }}" placeholder="100MB">
+    <small>Maximum file size per upload (e.g., 50MB, 1GB)</small>
+
+    <label for="storage_limit">Storage Limit</label>
+    <input type="text" id="storage_limit" name="storage_limit" value="{{ settings.storage_limit }}" placeholder="1GB">
+    <small>Total storage limit for all files</small>
+
+    <label for="upload_api_key">Upload API Key</label>
+    <input type="text" id="upload_api_key" name="upload_api_key" value="{{ settings.upload_api_key }}" placeholder="Leave empty to disable">
+    <small>Require this key in X-Upload-Key header for uploads (empty = no key required)</small>
+
+    <button type="submit">Save Settings</button>
+</form>
+{% endblock %}

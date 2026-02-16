@@ -1,0 +1,17 @@
+<tr id="file-{{ file.code }}">
+    <td><a href="/{{ file.code }}/{{ file.filename }}">{{ file.filename }}</a></td>
+    <td><code>{{ file.code }}</code></td>
+    <td>{{ file.size | filesize }}</td>
+    <td>{{ file.download_count }}{% if file.max_downloads %} / {{ file.max_downloads }}{% endif %}</td>
+    <td>{% if file.expires_at %}{{ file.expires_at | timeago }}{% else %}never{% endif %}</td>
+    <td>{{ file.created_at | timeago }}</td>
+    <td>
+        <button
+            class="btn-delete"
+            hx-delete="/api/files/{{ file.code }}/htmx"
+            hx-target="#file-{{ file.code }}"
+            hx-swap="outerHTML swap:0.3s"
+            hx-confirm="Delete {{ file.filename }}?"
+        >&#10005;</button>
+    </td>
+</tr>

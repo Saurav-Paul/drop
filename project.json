@@ -1,0 +1,16 @@
+{
+  "name": "drop",
+  "version": "0.1.0",
+  "description": "Self-hosted encrypted file transfer",
+  "repository": "https://github.com/Saurav-Paul/drop",
+  "docker": {
+    "registry": "docker.io",
+    "username": "sauravpaul",
+    "image": "sauravpaul/drop"
+  },
+  "author": {
+    "name": "Saurav Paul",
+    "email": "sauravpaul.sunny@gmail.com"
+  },
+  "license": "MIT"
+}
