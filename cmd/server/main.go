@@ -7,8 +7,9 @@ import (
 	"github.com/labstack/echo/v4"           // Echo — the web framework (like FastAPI)
 	"github.com/labstack/echo/v4/middleware" // Built-in middleware (CORS, logging, etc.)
 
-	"github.com/Saurav-Paul/drop/internal/config"   // App configuration from env vars
-	"github.com/Saurav-Paul/drop/internal/database" // Database setup and migrations
+	"github.com/Saurav-Paul/drop/internal/api/settings" // Settings domain (CRUD for server config)
+	"github.com/Saurav-Paul/drop/internal/config"       // App configuration from env vars
+	"github.com/Saurav-Paul/drop/internal/database"     // Database setup and migrations
 )
 
 func main() {
@@ -26,11 +27,8 @@ func main() {
 		log.Fatalf("Failed to setup database: %v", err)
 	}
 
-	// The underscore (_) means we're intentionally not using these variables yet.
-	// They'll be passed to route handlers in later phases.
-	// In Go, unused variables cause a compile error — unlike Python which just ignores them.
+	// cfg will be used in later phases for auth middleware, upload limits, etc.
 	_ = cfg
-	_ = db
 
 	// Create a new Echo instance — this is the app, like FastAPI() in Python
 	e := echo.New()
@@ -45,6 +43,12 @@ func main() {
 	e.GET("/api/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, echo.Map{"status": "ok"})
 	})
+
+	// --- Settings routes ---
+	// Register() wires up the entire domain internally (repo → service → handler)
+	// so main.go only needs to pass the route group and DB connection.
+	// e.Group() creates a route group with a shared prefix — like APIRouter(prefix=...) in FastAPI
+	settings.Register(e.Group("/api/settings"), db)
 
 	// Start the server on port 8802
 	// e.Logger.Fatal() logs the error and exits if the server fails to start
