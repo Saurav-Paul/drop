@@ -27,9 +27,6 @@ func main() {
 		log.Fatalf("Failed to setup database: %v", err)
 	}
 
-	// cfg will be used in later phases for auth middleware, upload limits, etc.
-	_ = cfg
-
 	// Create a new Echo instance — this is the app, like FastAPI() in Python
 	e := echo.New()
 
@@ -48,7 +45,7 @@ func main() {
 	// Register() wires up the entire domain internally (repo → service → handler)
 	// so main.go only needs to pass the route group and DB connection.
 	// e.Group() creates a route group with a shared prefix — like APIRouter(prefix=...) in FastAPI
-	settings.Register(e.Group("/api/settings"), db)
+	settings.Register(e.Group("/api/settings"), db, cfg)
 
 	// Start the server on port 8802
 	// e.Logger.Fatal() logs the error and exits if the server fails to start

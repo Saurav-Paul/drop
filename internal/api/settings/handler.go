@@ -8,25 +8,31 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
+
+	"github.com/Saurav-Paul/drop/internal/config"
+	mw "github.com/Saurav-Paul/drop/internal/middleware" // aliased to "mw" to avoid name clash with echo's middleware
 )
 
 // Register wires up the settings domain and attaches routes to the group.
-// This keeps main.go clean — it only needs to call:
+// All settings routes require admin auth.
 //
-//	settings.Register(group, db)
+// Usage in main.go:
 //
-// instead of manually creating the repo, service, and handler.
-func Register(g *echo.Group, db *gorm.DB) {
+//	settings.Register(e.Group("/api/settings"), db, cfg)
+func Register(g *echo.Group, db *gorm.DB, cfg *config.Config) {
 	repo := NewRepository(db)
 	service := NewService(repo)
 	handler := &Handler{service: service}
 
-	// Register routes on the group (already prefixed with "/api/settings" by the caller)
+	// Apply admin middleware to all routes in this group.
+	// g.Use() attaches middleware to the group — every request to /api/settings/*
+	// must pass admin auth before reaching the handler.
 	//
 	// Python equivalent:
-	//   router = APIRouter(prefix="/api/settings", tags=["Settings"])
-	//   @router.get("")
-	//   @router.put("")
+	//   if not is_admin(request):
+	//       raise HTTPException(status_code=401, detail="Admin access required")
+	g.Use(mw.RequireAdmin(cfg))
+
 	g.GET("", handler.getSettings)  // GET /api/settings
 	g.PUT("", handler.putSettings)  // PUT /api/settings
 }
