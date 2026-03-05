@@ -1,4 +1,9 @@
-# Python
+# Go
+/server
+/drop
+vendor/
+
+# Python (legacy — will be removed after rewrite)
 __pycache__/
 *.py[oc]
 build/
