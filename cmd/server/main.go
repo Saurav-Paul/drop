@@ -9,6 +9,7 @@ import (
 
 	"github.com/Saurav-Paul/drop/internal/api/download" // Download domain (file downloads via GET)
 	"github.com/Saurav-Paul/drop/internal/api/files"    // Files domain (admin file management)
+	"github.com/Saurav-Paul/drop/internal/api/pages"    // Pages domain (HTML pages, login, dashboard)
 	"github.com/Saurav-Paul/drop/internal/api/settings" // Settings domain (CRUD for server config)
 	"github.com/Saurav-Paul/drop/internal/api/upload"   // Upload domain (file uploads via PUT)
 	"github.com/Saurav-Paul/drop/internal/cleanup"      // Cleanup cron (expired files, orphaned dirs)
@@ -53,6 +54,10 @@ func main() {
 
 	// --- Files routes (admin) ---
 	files.Register(e.Group("/api/files"), db, cfg)
+
+	// --- Pages (HTML routes — login, dashboard, settings, HTMX endpoints, static files) ---
+	// Must be registered BEFORE catch-all download/upload routes so specific paths match first
+	pages.Register(e, db, cfg)
 
 	// --- Download route (catch-all GET /:code/:filename) ---
 	download.Register(e, db)

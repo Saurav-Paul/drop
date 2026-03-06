@@ -1,9 +1,12 @@
+{{/* Base layout — wraps all pages. Go's html/template doesn't have Jinja2's
+     {% extends %}, so the handler parses base.html + page template together,
+     and each page defines {{define "content"}}...{{end}}. */}}
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Drop{% endblock %}</title>
+    <title>{{if .Title}}{{.Title}}{{else}}Drop{{end}}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
@@ -18,14 +21,14 @@
         </div>
     </nav>
     <div class="container">
-        {% block content %}{% endblock %}
+        {{template "content" .}}
     </div>
     <script>
     function copyLink(btn, code, filename) {
-        const url = location.origin + '/' + code + '/' + filename;
-        navigator.clipboard.writeText(url).then(() => {
+        var url = location.origin + '/' + code + '/' + filename;
+        navigator.clipboard.writeText(url).then(function() {
             btn.textContent = '\u2713';
-            setTimeout(() => { btn.textContent = '\uD83D\uDCCB'; }, 1500);
+            setTimeout(function() { btn.textContent = '\uD83D\uDCCB'; }, 1500);
         });
     }
     </script>

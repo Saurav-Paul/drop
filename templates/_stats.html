@@ -1,14 +1,19 @@
+{{/* Stats partial — used in dashboard and HTMX OOB updates.
+     Jinja2: {{ stats.total_storage | filesize }}
+     Go:     {{filesize .Stats.TotalStorage}}  — custom template function */}}
+{{define "stats"}}
 <div class="stats-grid">
     <div class="stat-card">
-        <span class="stat-value">{{ stats.total_files }}</span>
+        <span class="stat-value">{{.Stats.TotalFiles}}</span>
         <span class="stat-label">Files</span>
     </div>
     <div class="stat-card">
-        <span class="stat-value">{{ stats.total_storage | filesize }}</span>
+        <span class="stat-value">{{filesize .Stats.TotalStorage}}</span>
         <span class="stat-label">Storage</span>
     </div>
     <div class="stat-card">
-        <span class="stat-value">{{ stats.total_downloads }}</span>
+        <span class="stat-value">{{.Stats.TotalDownloads}}</span>
         <span class="stat-label">Downloads</span>
     </div>
 </div>
+{{end}}

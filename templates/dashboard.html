@@ -1,8 +1,6 @@
-{% extends "base.html" %}
-{% block title %}Dashboard — Drop{% endblock %}
-{% block content %}
+{{define "content"}}
 <div id="dashboard-content">
-    {% include "_dashboard_content.html" %}
+    {{template "dashboard_content" .}}
 </div>
 
 <!-- Upload Modal -->
@@ -26,4 +24,4 @@
         </form>
     </article>
 </dialog>
-{% endblock %}
+{{end}}

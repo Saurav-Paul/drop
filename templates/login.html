@@ -1,11 +1,9 @@
-{% extends "base.html" %}
-{% block title %}Login — Drop{% endblock %}
-{% block content %}
+{{define "content"}}
 <div class="login-container">
     <h2>Login</h2>
-    {% if error %}
-    <p class="error">{{ error }}</p>
-    {% endif %}
+    {{if .Error}}
+    <p class="error">{{.Error}}</p>
+    {{end}}
     <form method="post" action="/login">
         <label for="username">Username</label>
         <input type="text" id="username" name="username" required autofocus>
@@ -16,4 +14,4 @@
         <button type="submit">Login</button>
     </form>
 </div>
-{% endblock %}
+{{end}}

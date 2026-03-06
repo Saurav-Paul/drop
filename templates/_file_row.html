@@ -1,23 +1,30 @@
-<tr id="file-{{ file.code }}">
-    <td><a href="/{{ file.code }}/{{ file.filename }}">{{ file.filename }}</a></td>
-    <td><code>{{ file.code }}</code></td>
-    <td>{{ file.size | filesize }}</td>
-    <td>{{ file.download_count }}{% if file.max_downloads %} / {{ file.max_downloads }}{% endif %}</td>
-    <td>{% if file.expires_at %}{{ file.expires_at | timeago }}{% else %}never{% endif %}</td>
-    <td>{{ file.created_at | timeago }}</td>
+{{/* File row partial — one table row per file.
+     In Jinja2, this was included inside a {% for file in files %} loop.
+     In Go, we call {{range .Files}} in _dashboard_content.html,
+     and the "." (dot) inside range becomes each FileResponse.
+     We use custom template functions: filesize, timeago, deref. */}}
+{{define "file_row"}}
+<tr id="file-{{.Code}}">
+    <td><a href="/{{.Code}}/{{.Filename}}">{{.Filename}}</a></td>
+    <td><code>{{.Code}}</code></td>
+    <td>{{filesize .Size}}</td>
+    <td>{{.DownloadCount}}{{if .MaxDownloads}} / {{deref .MaxDownloads}}{{end}}</td>
+    <td>{{if .ExpiresAt}}{{timeago (deref .ExpiresAt)}}{{else}}never{{end}}</td>
+    <td>{{timeago .CreatedAt}}</td>
     <td style="white-space: nowrap;">
         <button
             class="btn-action btn-copy"
-            onclick="copyLink(this, '{{ file.code }}', '{{ file.filename }}')"
+            onclick="copyLink(this, '{{.Code}}', '{{.Filename}}')"
             title="Copy download link"
         >&#128203;</button>
         <button
             class="btn-action btn-delete"
-            hx-delete="/api/files/{{ file.code }}/htmx"
-            hx-target="#file-{{ file.code }}"
+            hx-delete="/api/files/{{.Code}}/htmx"
+            hx-target="#file-{{.Code}}"
             hx-swap="outerHTML swap:0.3s"
-            hx-confirm="Delete {{ file.filename }}?"
+            hx-confirm="Delete {{.Filename}}?"
             title="Delete file"
         >&#10005;</button>
     </td>
 </tr>
+{{end}}

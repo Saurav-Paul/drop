@@ -1,5 +1,8 @@
+{{/* Dashboard content partial — rendered inside #dashboard-content div.
+     Also returned by the /cleanup HTMX endpoint to refresh the dashboard. */}}
+{{define "dashboard_content"}}
 <div id="stats-container">
-    {% include "_stats.html" %}
+    {{template "stats" .}}
 </div>
 
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
@@ -20,15 +23,15 @@
     </div>
 </div>
 
-{% if cleanup_message %}
-<p class="cleanup-message">{{ cleanup_message }}</p>
-{% endif %}
+{{if .CleanupMessage}}
+<p class="cleanup-message">{{.CleanupMessage}}</p>
+{{end}}
 
-{% if last_cleanup %}
-<p style="font-size: 0.8rem; opacity: 0.5; margin-top: -0.5rem; margin-bottom: 1rem;">Last cleanup: {{ last_cleanup | timeago }}</p>
-{% endif %}
+{{if .LastCleanup}}
+<p style="font-size: 0.8rem; opacity: 0.5; margin-top: -0.5rem; margin-bottom: 1rem;">Last cleanup: {{timeago .LastCleanup}}</p>
+{{end}}
 
-{% if files %}
+{{if .Files}}
 <div class="table-container">
     <table>
         <thead>
@@ -43,12 +46,13 @@
             </tr>
         </thead>
         <tbody>
-            {% for file in files %}
-            {% include "_file_row.html" %}
-            {% endfor %}
+            {{range .Files}}
+            {{template "file_row" .}}
+            {{end}}
         </tbody>
     </table>
 </div>
-{% else %}
+{{else}}
 <p class="empty-state">No files uploaded yet.</p>
-{% endif %}
+{{end}}
+{{end}}
