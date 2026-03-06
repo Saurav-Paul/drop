@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"           // Echo — the web framework (like FastAPI)
 	"github.com/labstack/echo/v4/middleware" // Built-in middleware (CORS, logging, etc.)
 
+	"github.com/Saurav-Paul/drop/internal/api/files"    // Files domain (admin file management)
 	"github.com/Saurav-Paul/drop/internal/api/settings" // Settings domain (CRUD for server config)
 	"github.com/Saurav-Paul/drop/internal/config"       // App configuration from env vars
 	"github.com/Saurav-Paul/drop/internal/database"     // Database setup and migrations
@@ -46,6 +47,9 @@ func main() {
 	// so main.go only needs to pass the route group and DB connection.
 	// e.Group() creates a route group with a shared prefix — like APIRouter(prefix=...) in FastAPI
 	settings.Register(e.Group("/api/settings"), db, cfg)
+
+	// --- Files routes (admin) ---
+	files.Register(e.Group("/api/files"), db, cfg)
 
 	// Start the server on port 8802
 	// e.Logger.Fatal() logs the error and exits if the server fails to start
