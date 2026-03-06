@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"           // Echo — the web framework (like FastAPI)
 	"github.com/labstack/echo/v4/middleware" // Built-in middleware (CORS, logging, etc.)
 
+	"github.com/Saurav-Paul/drop/internal/api/download" // Download domain (file downloads via GET)
 	"github.com/Saurav-Paul/drop/internal/api/files"    // Files domain (admin file management)
 	"github.com/Saurav-Paul/drop/internal/api/settings" // Settings domain (CRUD for server config)
 	"github.com/Saurav-Paul/drop/internal/api/upload"   // Upload domain (file uploads via PUT)
@@ -51,6 +52,9 @@ func main() {
 
 	// --- Files routes (admin) ---
 	files.Register(e.Group("/api/files"), db, cfg)
+
+	// --- Download route (catch-all GET /:code/:filename) ---
+	download.Register(e, db)
 
 	// --- Upload route (catch-all PUT) ---
 	// Must be registered AFTER specific API routes so it doesn't intercept them
