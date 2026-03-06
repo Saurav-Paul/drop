@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/labstack/echo/v4 v4.15.1
 	github.com/pressly/goose/v3 v3.27.0
+	github.com/robfig/cron/v3 v3.0.1
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1
 )
