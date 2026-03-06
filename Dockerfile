@@ -1,36 +1,50 @@
-FROM python:3.12-slim
+# Multi-stage build for Drop (Go).
+# Stage 1: Build a fully static binary with CGO (required for SQLite).
+# Stage 2: Copy into a scratch-based image — no OS, no shell, just the binary.
+# Final image: ~10-12MB.
+
+# --- Build stage ---
+FROM golang:1.25-alpine AS builder
+
+# gcc + musl-dev are required because mattn/go-sqlite3 is a CGO package
+# (C library wrapped in Go). Without these, the build fails.
+RUN apk add --no-cache gcc musl-dev
+
+WORKDIR /src
+
+# Cache dependencies — this layer only rebuilds when go.mod/go.sum change.
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source and build a fully static binary.
+# -linkmode external -extldflags "-static" forces static linking of C deps,
+# so the binary doesn't depend on musl/libc at runtime.
+# -s -w strips debug symbols → smaller binary.
+COPY . .
+RUN CGO_ENABLED=1 go build \
+    -ldflags="-s -w -linkmode external -extldflags '-static'" \
+    -o /drop ./cmd/server/main.go \
+    && mkdir /empty
+
+# --- Runtime stage ---
+# scratch = empty image. No shell, no OS, no package manager.
+# The binary is fully static so it doesn't need anything else.
+# This gives us the smallest possible image and zero attack surface.
+FROM scratch
 
 WORKDIR /app
 
-# Install cron
-RUN apt-get update && apt-get install -y --no-install-recommends cron && \
-    rm -rf /var/lib/apt/lists/*
+# Copy the static binary
+COPY --from=builder /drop /app/drop
 
-# Copy dependency file and install
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir . && \
-    rm -rf /root/.cache/pip && \
-    find /usr/local -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+# Copy templates and static assets (loaded at runtime, not embedded)
+COPY templates/ /app/templates/
+COPY static/ /app/static/
 
-# Copy application
-COPY backend/ ./backend/
-COPY templates/ ./templates/
-COPY static/ ./static/
-
-# Create data directory
-RUN mkdir -p /data
-
-# Setup cron — cleanup every 12 hours
-RUN echo "0 */12 * * * cd /app && PYTHONPATH=/app/backend DATA_DIR=/data python backend/cleanup.py >> /var/log/cron.log 2>&1" > /etc/cron.d/drop-cleanup && \
-    chmod 0644 /etc/cron.d/drop-cleanup && \
-    crontab /etc/cron.d/drop-cleanup
-
-# Environment variables
-ENV PYTHONUNBUFFERED=1
-ENV DATA_DIR=/data
-ENV PYTHONPATH=/app/backend
+# scratch has no mkdir — create /data by copying an empty dir from builder.
+# At runtime, docker-compose mounts a volume here anyway.
+COPY --from=builder /empty /data
 
 EXPOSE 8802
 
-# Start cron in background, then uvicorn
-CMD cron && uvicorn backend.main:app --host 0.0.0.0 --port 8802
+ENTRYPOINT ["/app/drop"]
