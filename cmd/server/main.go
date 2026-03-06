@@ -9,6 +9,7 @@ import (
 
 	"github.com/Saurav-Paul/drop/internal/api/files"    // Files domain (admin file management)
 	"github.com/Saurav-Paul/drop/internal/api/settings" // Settings domain (CRUD for server config)
+	"github.com/Saurav-Paul/drop/internal/api/upload"   // Upload domain (file uploads via PUT)
 	"github.com/Saurav-Paul/drop/internal/config"       // App configuration from env vars
 	"github.com/Saurav-Paul/drop/internal/database"     // Database setup and migrations
 )
@@ -50,6 +51,10 @@ func main() {
 
 	// --- Files routes (admin) ---
 	files.Register(e.Group("/api/files"), db, cfg)
+
+	// --- Upload route (catch-all PUT) ---
+	// Must be registered AFTER specific API routes so it doesn't intercept them
+	upload.Register(e, db, cfg)
 
 	// Start the server on port 8802
 	// e.Logger.Fatal() logs the error and exits if the server fails to start
