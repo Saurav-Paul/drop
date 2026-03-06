@@ -120,14 +120,17 @@ docker compose up -d
 
 ### Local development
 
+Requires Go 1.25+ and a C compiler (for SQLite CGO bindings).
+
 ```bash
-uv venv && uv pip install fastapi "uvicorn[standard]" sqlalchemy alembic jinja2 python-multipart pydantic
-PYTHONPATH=backend .venv/bin/uvicorn backend.main:app --port 8802 --reload
+git clone https://github.com/Saurav-Paul/drop.git
+cd drop
+DROP_ADMIN_USER=admin DROP_ADMIN_PASS=secret go run ./cmd/server/main.go
 ```
 
 ### Cleanup
 
-A cron job runs inside the container every 12 hours to:
+An in-process cron job runs every 12 hours to:
 
 - Delete files past their `expires_at` time
 - Delete files that have reached `max_downloads`
@@ -385,28 +388,25 @@ Returns `{"status": "ok"}`. No authentication required.
 
 ```
 drop/
-├── backend/
+├── cmd/server/main.go         # Entry point — wires all domains
+├── internal/
+│   ├── config/                # Environment-based configuration
+│   ├── database/              # GORM SQLite + Goose migrations
+│   ├── middleware/             # Admin auth (HMAC cookies + headers)
 │   ├── api/
-│   │   ├── download/      # GET /{code}/{filename}
-│   │   ├── upload/         # PUT /{filename}
-│   │   ├── files/          # /api/files CRUD
-│   │   ├── settings/       # /api/settings CRUD
-│   │   └── pages/          # Dashboard + settings HTML
-│   ├── db_migrations/      # Alembic migrations
-│   ├── orm/                # Central model imports
-│   ├── main.py             # FastAPI app entry point
-│   ├── config.py           # Environment-based configuration
-│   ├── database.py         # SQLAlchemy setup (SQLite)
-│   ├── auth.py             # Admin header validation
-│   └── cleanup.py          # Cron-based file cleanup
+│   │   ├── download/          # GET /{code}/{filename}
+│   │   ├── upload/            # PUT /{filename}
+│   │   ├── files/             # /api/files CRUD
+│   │   ├── settings/          # /api/settings CRUD
+│   │   └── pages/             # Dashboard, login, settings HTML
+│   └── cleanup/               # In-process cron (every 12h)
 ├── cli/
-│   └── drop.sh             # CLI script
-├── templates/              # Jinja2 templates (Pico CSS + HTMX)
-├── static/                 # CSS
-├── scripts/
-│   └── publish.sh          # Docker multi-platform publish
-├── Dockerfile
-├── docker-compose.yml      # Dev (local volume bind)
-├── docker-compose.prod.yml # Prod (pre-built image)
-└── project.json            # Publish metadata
+│   └── drop.sh                # CLI script (unchanged)
+├── templates/                 # Go html/template (Pico CSS + HTMX)
+├── static/                    # CSS
+├── Dockerfile                 # Multi-stage build (~13MB image)
+├── docker-compose.yml         # Dev (local volume bind)
+├── docker-compose.prod.yml    # Prod (pre-built image)
+├── go.mod / go.sum
+└── project.json               # Publish metadata
 ```
